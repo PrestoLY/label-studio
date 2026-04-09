@@ -93,7 +93,10 @@ class BaseUserSerializer(FlexFieldsModelSerializer):
             'active_organization_meta',
             'allow_newsletters',
             'date_joined',
+            'is_approved',
+            'is_staff',
         )
+        read_only_fields = ('is_approved', 'is_staff')
 
 
 class BaseUserSerializerUpdate(BaseUserSerializer):

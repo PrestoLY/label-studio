@@ -5,6 +5,92 @@
 [Website](https://labelstud.io/) • [Docs](https://labelstud.io/guide/) • [Join Slack Community <img src="https://app.heartex.ai/docs/images/slack-mini.png" width="18px"/>](https://slack.labelstud.io/?source=github-1)
 
 
+## What This Fork Changes (Libyan Whisper Edition)
+
+This is a customized fork of Label Studio Community Edition, tailored for the **Libyan Whisper** transcription project. It adds enterprise-grade features for managing a private, multi-annotator audio transcription platform.
+
+### 1. Admin-Controlled User Approval
+- New users are **blocked by default** until an admin approves them
+- `is_approved` field on User model with middleware enforcement
+- Django Admin bulk actions: "Approve / Revoke" selected users
+- API: `POST /api/users/<id>/approve/` and `/revoke/`
+
+### 2. Project-Level Access Control
+- Non-admin users **only see projects they are assigned to**
+- `ProjectMember` model used for user-project assignment (admin-managed)
+- `Project.has_permission()` enforced across all models (Task, Annotation, etc.)
+- API: `GET/POST /api/projects/<id>/members/`, `DELETE /api/projects/<id>/members/<mid>/`
+
+### 3. Annotation Review Workflow
+- Submitted annotations are **read-only** for annotators (prevents tampering)
+- Admin can **Accept** or **Reject** annotations with comments
+- Rejected annotations are sent back to the annotator for correction
+- API: `POST /api/annotations/<id>/accept/` and `/reject/`
+
+### 4. S3 Export Gating
+- Only **accepted** annotations are exported to S3 Target Storage
+- Exported files routed to `{prefix}/completed/` sub-path
+
+### 5. Productivity Analytics
+- Admin dashboard: total transcribed, avg time/chunk, per-user breakdown, daily activity
+- CSV export of productivity data
+- API: `GET /api/analytics/dashboard/` and `/export/`
+
+### 6. Frontend Restrictions for Non-Admin Users
+- Hidden: Settings, Cloud Storage, Export, Organization, Create Project
+- Import/Export buttons disabled in Data Manager
+- Analytics page (admin-only sidebar link)
+
+### 7. Arabic RTL Support
+- Transcription TextArea fields use `dir="auto"` for automatic RTL/LTR detection
+- Arabic text aligns right-to-left, English stays left-to-right
+
+### 8. Annotation Conflict Prevention
+- Task locking on draft creation prevents two annotators from working on the same task
+- Lock check on annotation submission rejects concurrent submissions
+
+### 9. Default "Uncompleted" Filter
+- Default Data Manager tab pre-filtered to show only uncompleted tasks
+
+### Setup
+
+```bash
+# Install Python dependencies
+pip install -e .
+
+# Apply migrations (important: disable Sentry for Python 3.13 compatibility)
+SENTRY_DSN="" python label_studio/manage.py migrate
+
+# Create/promote admin user
+SENTRY_DSN="" python label_studio/manage.py shell -c "
+from users.models import User
+u = User.objects.get(email='your@email.com')
+u.is_staff = True; u.is_superuser = True; u.is_approved = True
+u.save(update_fields=['is_staff', 'is_superuser', 'is_approved'])
+"
+
+# Build frontend (required for RTL and UI changes)
+cd web && yarn install && yarn ls:build && cd ..
+
+# Run server
+SENTRY_DSN="" python label_studio/manage.py runserver 8080
+```
+
+### New API Endpoints
+
+| Endpoint | Method | Auth | Purpose |
+|----------|--------|------|---------|
+| `/api/users/<id>/approve/` | POST | Staff | Approve a user |
+| `/api/users/<id>/revoke/` | POST | Staff | Revoke user approval |
+| `/api/projects/<id>/members/` | GET/POST | Staff | List/add project members |
+| `/api/projects/<id>/members/<mid>/` | DELETE | Staff | Remove project member |
+| `/api/annotations/<id>/accept/` | POST | Staff | Accept annotation |
+| `/api/annotations/<id>/reject/` | POST | Staff | Reject annotation |
+| `/api/analytics/dashboard/` | GET | Staff | Productivity stats (JSON) |
+| `/api/analytics/export/` | GET | Staff | Productivity report (CSV) |
+
+---
+
 ## What is Label Studio?
 
 <!-- <a href="https://labelstud.io/blog/release-130.html"><img src="https://github.com/HumanSignal/label-studio/raw/master/docs/themes/htx/source/images/release-130/LS-Hits-v1.3.png" align="right" /></a> -->

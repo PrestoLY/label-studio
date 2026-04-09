@@ -14,6 +14,7 @@ import { isDefined } from "../../utils/helpers";
 import { ImportModal } from "../CreateProject/Import/ImportModal";
 import { ExportPage } from "../ExportPage/ExportPage";
 import { APIConfig } from "./api-config";
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 
 import "./DataManager.prefix.css";
 
@@ -37,8 +38,8 @@ const initializeDataManager = async (root, props, params) => {
     showPreviews: false,
     apiEndpoints: APIConfig.endpoints,
     interfaces: {
-      import: true,
-      export: true,
+      import: params.isAdmin !== false,
+      export: params.isAdmin !== false,
       backButton: false,
       labelingHeader: false,
       autoAnnotation: params.autoAnnotation,
@@ -65,6 +66,8 @@ export const DataManagerPage = ({ ...props }) => {
   const history = useHistory();
   const api = useAPI();
   const { project } = useProject();
+  const { user } = useAuth();
+  const isAdmin = user?.is_staff;
   const setContextProps = useContextProps();
   const [crashed, setCrashed] = useState(false);
   const [loading, setLoading] = useState(!window.DataManager || !window.LabelStudio);
@@ -89,6 +92,7 @@ export const DataManagerPage = ({ ...props }) => {
       (await initializeDataManager(root.current, props, {
         ...params,
         project,
+        isAdmin,
         autoAnnotation: isDefined(interactiveBacked),
       })));
 
@@ -119,19 +123,23 @@ export const DataManagerPage = ({ ...props }) => {
     });
 
     dataManager.on("settingsClicked", () => {
+      if (!isAdmin) return;
       history.push(buildLink("/settings/labeling", { id: params?.id ?? project?.id }));
     });
 
     dataManager.on("importClicked", () => {
+      if (!isAdmin) return;
       history.push(buildLink("/data/import", { id: params?.id ?? project?.id }));
     });
 
     // Navigate to Storage Settings and auto-open Add Source Storage modal
     dataManager.on("openSourceStorageModal", () => {
+      if (!isAdmin) return;
       history.push(buildLink("/settings/storage?open=source", { id: params?.id ?? project?.id }));
     });
 
     dataManager.on("exportClicked", () => {
+      if (!isAdmin) return;
       history.push(buildLink("/data/export", { id: params?.id ?? project?.id }));
     });
 

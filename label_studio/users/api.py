@@ -9,7 +9,7 @@ from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_sche
 from rest_framework import generics, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-from rest_framework.exceptions import MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied
 from rest_framework.parsers import FormParser, JSONParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
@@ -418,3 +418,31 @@ class UserHotkeysAPI(APIView):
         except Exception as e:
             logger.error(f'Error updating hotkeys for user {request.user.pk}: {str(e)}')
             return Response({'error': 'Failed to update hotkeys configuration'}, status=500)
+
+
+class UserApprovalAPI(APIView):
+    """Approve a user account. Staff only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_staff:
+            raise PermissionDenied('Only staff can approve users.')
+        user = generics.get_object_or_404(User, pk=pk)
+        user.is_approved = True
+        user.save(update_fields=['is_approved'])
+        return Response({'status': 'approved', 'user_id': user.pk})
+
+
+class UserRevokeApprovalAPI(APIView):
+    """Revoke a user's approval. Staff only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        if not request.user.is_staff:
+            raise PermissionDenied('Only staff can revoke user approval.')
+        user = generics.get_object_or_404(User, pk=pk)
+        user.is_approved = False
+        user.save(update_fields=['is_approved'])
+        return Response({'status': 'revoked', 'user_id': user.pk})

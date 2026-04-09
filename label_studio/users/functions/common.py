@@ -65,9 +65,11 @@ def save_user(request, next_page, user_form):
         org = Organization.objects.first()
         org.add_user(user)
     else:
+        # First user creates the org — auto-approve them
         org = Organization.create_organization(created_by=user, title='Label Studio')
+        user.is_approved = True
     user.active_organization = org
-    user.save(update_fields=['active_organization'])
+    user.save(update_fields=['active_organization', 'is_approved'])
 
     request.advanced_json = {
         'email': user.email,
@@ -78,6 +80,10 @@ def save_user(request, next_page, user_form):
     }
     if user_form.cleaned_data.get('how_find_us', '') == 'Other':
         request.advanced_json['elaborate'] = user_form.cleaned_data.get('elaborate', '')
+
+    # Only auto-login approved users; unapproved users see a pending page
+    if not user.is_approved:
+        return redirect(reverse('user-pending-approval'))
 
     redirect_url = next_page if next_page else reverse('projects:project-index')
     login(request, user, backend='django.contrib.auth.backends.ModelBackend')

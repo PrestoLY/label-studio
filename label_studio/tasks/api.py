@@ -650,6 +650,16 @@ class AnnotationAPI(generics.RetrieveUpdateDestroyAPIView):
     def update(self, request, *args, **kwargs):
         # save user history with annotator_id, time & annotation result
         annotation = self.get_object()
+
+        # Non-admin annotators cannot edit accepted annotations.
+        # Submitted annotations can only be edited by the original annotator
+        # (to allow auto-save and corrections before admin review).
+        if not request.user.is_staff:
+            if annotation.last_action == 'accepted':
+                raise PermissionDenied('This annotation has been accepted and is read-only.')
+            if annotation.last_action == 'submitted' and annotation.completed_by_id != request.user.id:
+                raise PermissionDenied('This annotation was submitted by another user and is read-only.')
+
         # use updated instead of save to avoid duplicated signals
         Annotation.objects.filter(id=annotation.id).update(updated_by=request.user)
 
@@ -660,6 +670,10 @@ class AnnotationAPI(generics.RetrieveUpdateDestroyAPIView):
         task.save()  # refresh task metrics
 
         result = super(AnnotationAPI, self).update(request, *args, **kwargs)
+
+        # If annotator re-submits a rejected annotation, mark it as submitted again
+        if not request.user.is_staff and annotation.last_action == 'rejected':
+            Annotation.objects.filter(id=annotation.id).update(last_action='submitted')
 
         task.update_is_labeled()
         task.save(update_fields=['updated_at'])  # refresh task metrics
@@ -788,6 +802,16 @@ class AnnotationsListAPI(GetParentObjectMixin, generics.ListCreateAPIView):
         # annotator has write access only to annotations and it can't be checked it after serializer.save()
         user = self.request.user
 
+        # Prevent concurrent annotation: reject if task is locked by another user
+        if task.has_lock(user=user):
+            raise ValidationError(
+                'This task is currently being annotated by another user. '
+                'Please go back and try another task.'
+            )
+
+        # Acquire lock so no one else can submit while this user is working
+        task.set_lock(user)
+
         # Check if task is being skipped and if it's allowed
         was_cancelled_get = bool_from_request(self.request.GET, 'was_cancelled', False)
         was_cancelled_data = self.request.data.get('was_cancelled', False)
@@ -834,6 +858,10 @@ class AnnotationsListAPI(GetParentObjectMixin, generics.ListCreateAPIView):
         logger.debug(f'User={self.request.user}: save annotation')
         annotation = ser.save(**extra_args)
 
+        # Mark non-cancelled annotations as submitted for the review workflow
+        if not annotation.was_cancelled:
+            Annotation.objects.filter(id=annotation.id).update(last_action='submitted')
+
         logger.debug(f'Save activity for user={self.request.user}')
         self.request.user.activity_at = timezone.now()
         self.request.user.save()
@@ -874,6 +902,12 @@ class AnnotationDraftListAPI(generics.ListCreateAPIView):
         annotation_id = self.kwargs.get('annotation_id')
         user = self.request.user
         logger.debug(f'User {user} is going to create draft for task={task_id}, annotation={annotation_id}')
+
+        # Acquire lock when user starts working on a task (prevents conflicts)
+        task = Task.objects.get(pk=task_id)
+        if not task.has_lock(user=user):
+            task.set_lock(user)
+
         serializer.save(task_id=self.kwargs['pk'], annotation_id=annotation_id, user=self.request.user)
 
 

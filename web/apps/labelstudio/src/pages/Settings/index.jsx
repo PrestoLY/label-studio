@@ -1,3 +1,4 @@
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import { SidebarMenu } from "../../components/SidebarMenu/SidebarMenu";
 import { WebhookPage } from "../WebhookPage/WebhookPage";
 import { DangerZone } from "./DangerZone";
@@ -10,17 +11,20 @@ import { StorageSettings } from "./StorageSettings/StorageSettings";
 import "./settings.prefix.css";
 
 export const MenuLayout = ({ children, ...routeProps }) => {
+  const { user } = useAuth();
+  const isAdmin = user?.is_staff;
+
   return (
     <SidebarMenu
       menuItems={[
         GeneralSettings,
         LabelingSettings,
         AnnotationSettings,
-        MachineLearningSettings,
-        PredictionsSettings,
-        StorageSettings,
-        WebhookPage,
-        DangerZone,
+        isAdmin && MachineLearningSettings,
+        isAdmin && PredictionsSettings,
+        isAdmin && StorageSettings,
+        isAdmin && WebhookPage,
+        isAdmin && DangerZone,
       ].filter(Boolean)}
       path={routeProps.match.url}
       children={children}

@@ -100,6 +100,11 @@ def user_signup(request):
     )
 
 
+def user_pending_approval(request):
+    """Pending approval page for unapproved users."""
+    return render(request, 'users/pending_approval.html')
+
+
 @enforce_csrf_checks
 def user_login(request):
     """Login page"""

@@ -772,6 +772,12 @@ class Annotation(AnnotationMixin, FsmHistoryStateModel):
         default=None,
         null=True,
     )
+    review_comment = models.TextField(
+        _('review comment'),
+        null=True,
+        blank=True,
+        help_text='Comment from reviewer, especially rejection reasons',
+    )
     bulk_created = models.BooleanField(
         _('bulk created'),
         default=False,

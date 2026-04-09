@@ -72,11 +72,17 @@ class ProjectMixin:
         )
 
     def has_permission(self, user):
-        """
-        Dummy stub for has_permission
+        """Check if user has access to this project.
+
+        Staff/superusers always have access. Regular users must be
+        an enabled member of the project via ProjectMember.
         """
         user.project = self  # link for activity log
-        return True
+        if user.is_staff or user.is_superuser:
+            return True
+        from projects.models import ProjectMember
+
+        return ProjectMember.objects.filter(user=user, project=self, enabled=True).exists()
 
     def _can_use_overlap(self):
         """

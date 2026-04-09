@@ -179,6 +179,11 @@ class ProjectListAPI(generics.ListCreateAPIView):
         projects = Project.objects.filter(organization=self.request.user.active_organization).order_by(
             F('pinned_at').desc(nulls_last=True), '-created_at'
         )
+
+        # Non-admin users only see projects they are assigned to
+        if not self.request.user.is_staff:
+            projects = projects.filter(members__user=self.request.user, members__enabled=True)
+
         if filter in ['pinned_only', 'exclude_pinned']:
             projects = projects.filter(pinned_at__isnull=filter == 'exclude_pinned')
         projects = ProjectManager.with_counts_annotate(projects, fields=fields)
@@ -246,6 +251,10 @@ class ProjectCountsListAPI(generics.ListAPIView):
         projects = Project.objects.with_counts(fields=fields).filter(
             organization=self.request.user.active_organization
         )
+
+        # Non-admin users only see projects they are assigned to
+        if not self.request.user.is_staff:
+            projects = projects.filter(members__user=self.request.user, members__enabled=True)
 
         # Only annotate FSM state for UI/API consumption when both feature flags are enabled
         if flag_set('fflag_feat_fit_568_finite_state_management', user=self.request.user) and flag_set(

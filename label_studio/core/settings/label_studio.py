@@ -13,6 +13,7 @@ DATABASES = {'default': DATABASES_ALL[DJANGO_DB]}
 
 MIDDLEWARE.append('organizations.middleware.DummyGetSessionMiddleware')
 MIDDLEWARE.append('core.middleware.UpdateLastActivityMiddleware')
+MIDDLEWARE.append('users.middleware.ApprovalRequiredMiddleware')
 if INACTIVITY_SESSION_TIMEOUT_ENABLED:
     MIDDLEWARE.append('core.middleware.InactivitySessionTimeoutMiddleWare')
 

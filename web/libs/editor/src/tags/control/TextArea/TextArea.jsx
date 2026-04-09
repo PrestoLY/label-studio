@@ -357,6 +357,8 @@ const HtxTextArea = observer(({ item }) => {
     placeholder: item.placeholder,
     disabled: item.isReadOnly(),
     readOnly: item.isReadOnly(),
+    dir: "auto",
+    style: { textAlign: "start", unicodeBidi: "plaintext" },
     onChange: (ev) => {
       if (item.annotation.isReadOnly()) return;
       const { value } = ev.target;

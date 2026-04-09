@@ -12,6 +12,7 @@ import { DataManagerPage } from "../DataManager/DataManager";
 import { SettingsPage } from "../Settings";
 import { EmptyProjectsList, ProjectsList } from "./ProjectsList";
 import { useAbortController, useUpdatePageTitle } from "@humansignal/core";
+import { useAuth } from "@humansignal/core/providers/AuthProvider";
 import "./Projects.prefix.css";
 
 const getCurrentPage = () => {
@@ -23,6 +24,8 @@ const getCurrentPage = () => {
 export const ProjectsPage = () => {
   const api = React.useContext(ApiContext);
   const abortController = useAbortController();
+  const { user } = useAuth();
+  const isAdmin = user?.is_staff;
   const [projectsList, setProjectsList] = React.useState([]);
   const [networkState, setNetworkState] = React.useState(null);
   const [currentPage, setCurrentPage] = useState(getCurrentPage());
@@ -113,7 +116,8 @@ export const ProjectsPage = () => {
   React.useEffect(() => {
     // there is a nice page with Create button when list is empty
     // so don't show the context button in that case
-    setContextProps({ openModal, showButton: projectsList.length > 0 });
+    // Only admins can create projects
+    setContextProps({ openModal, showButton: isAdmin && projectsList.length > 0 });
   }, [projectsList.length]);
 
   return (
@@ -131,10 +135,15 @@ export const ProjectsPage = () => {
               loadNextPage={loadNextPage}
               pageSize={defaultPageSize}
             />
-          ) : (
+          ) : isAdmin ? (
             <EmptyProjectsList openModal={openModal} />
+          ) : (
+            <div style={{ textAlign: "center", padding: "60px 20px", color: "#666" }}>
+              <h3>No Projects Assigned</h3>
+              <p>You have not been assigned to any projects yet. Please contact your administrator.</p>
+            </div>
           )}
-          {modal && <CreateProject onClose={closeModal} />}
+          {isAdmin && modal && <CreateProject onClose={closeModal} />}
         </div>
       </Oneof>
     </div>

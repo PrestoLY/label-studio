@@ -278,7 +278,9 @@ class S3ExportStorage(S3StorageMixin, ExportStorage):
 
         # get key that identifies this object in storage
         key = S3ExportStorageLink.get_key(annotation)
-        key = str(self.prefix) + '/' + key if self.prefix else key
+        # Route accepted annotations under a /completed/ sub-prefix
+        prefix = str(self.prefix).rstrip('/') if self.prefix else ''
+        key = f'{prefix}/completed/{key}' if prefix else f'completed/{key}'
 
         # put object into storage
         additional_params = {}
@@ -332,6 +334,9 @@ def async_export_annotation_to_s3_storages(annotation: 'Annotation | int'):
 
 @receiver(post_save, sender=Annotation)
 def export_annotation_to_s3_storages(sender, instance, **kwargs):
+    # Only export accepted annotations to S3 (review workflow gate)
+    if instance.last_action != 'accepted':
+        return
     storages = getattr(instance.project, 'io_storages_s3exportstorages', None)
     if storages and storages.exists():  # avoid excess jobs in rq
         transaction.on_commit(lambda: start_job_async_or_sync(async_export_annotation_to_s3_storages, instance.pk))

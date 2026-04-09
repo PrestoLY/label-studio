@@ -6,7 +6,7 @@ from django.contrib.auth.admin import UserAdmin
 from django.contrib.auth.models import Group
 from ml.models import MLBackend, MLBackendTrainJob
 from organizations.models import Organization, OrganizationMember
-from projects.models import Project
+from projects.models import Project, ProjectMember
 from tasks.models import Annotation, Prediction, Task
 from users.models import User
 
@@ -22,10 +22,11 @@ class UserAdminShort(UserAdmin):
             'username',
             'active_organization',
             'organization',
+            'is_approved',
             'is_staff',
             'is_superuser',
         )
-        self.list_filter = ('is_staff', 'is_superuser', 'is_active')
+        self.list_filter = ('is_staff', 'is_superuser', 'is_active', 'is_approved')
         self.search_fields = (
             'username',
             'first_name',
@@ -44,6 +45,7 @@ class UserAdminShort(UserAdmin):
                 {
                     'fields': (
                         'is_active',
+                        'is_approved',
                         'is_staff',
                         'is_superuser',
                     )
@@ -51,6 +53,17 @@ class UserAdminShort(UserAdmin):
             ),
             ('Important dates', {'fields': ('last_login', 'date_joined')}),
         )
+        self.actions = ['approve_users', 'revoke_approval']
+
+    @admin.action(description='Approve selected users')
+    def approve_users(self, request, queryset):
+        count = queryset.update(is_approved=True)
+        self.message_user(request, f'{count} user(s) approved.')
+
+    @admin.action(description='Revoke approval for selected users')
+    def revoke_approval(self, request, queryset):
+        count = queryset.update(is_approved=False)
+        self.message_user(request, f'{count} user(s) had approval revoked.')
 
 
 class AsyncMigrationStatusAdmin(admin.ModelAdmin):
@@ -156,8 +169,16 @@ class OrganizationMemberAdmin(admin.ModelAdmin):
         self.ordering = ('id',)
 
 
+class ProjectMemberAdmin(admin.ModelAdmin):
+    list_display = ('user', 'project', 'enabled', 'created_at')
+    list_filter = ('enabled', 'project')
+    search_fields = ('user__email', 'project__title')
+    raw_id_fields = ('user', 'project')
+
+
 admin.site.register(User, UserAdminShort)
 admin.site.register(Project)
+admin.site.register(ProjectMember, ProjectMemberAdmin)
 admin.site.register(MLBackend)
 admin.site.register(MLBackendTrainJob)
 admin.site.register(Task)

@@ -138,6 +138,12 @@ class User(UserMixin, AbstractBaseUser, PermissionsMixin, UserLastActivityMixin)
         help_text=_('Designates whether to treat this user as active. Unselect this instead of deleting accounts.'),
     )
 
+    is_approved = models.BooleanField(
+        _('approved'),
+        default=False,
+        help_text=_('Designates whether this user has been approved by an administrator to access the platform.'),
+    )
+
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
 
     activity_at = models.DateTimeField(_('last annotation activity'), auto_now=True)

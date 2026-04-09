@@ -1,0 +1,17 @@
+{% extends 'users/new-ui/user_base.html' %}
+
+{% block user_content %}
+  <div class="form-wrapper">
+    <h2>Account Pending Approval</h2>
+    <p style="margin: 20px 0; color: #555; line-height: 1.6;">
+      Your account has been created but is awaiting administrator approval.
+      You will be able to access the platform once an admin activates your account.
+    </p>
+    <p style="margin: 20px 0; color: #555; line-height: 1.6;">
+      Please contact your administrator for access.
+    </p>
+    <a href="{% url 'logout' %}" class="login-button" style="display: inline-block; text-align: center; text-decoration: none; margin-top: 10px;">
+      Log out
+    </a>
+  </div>
+{% endblock %}

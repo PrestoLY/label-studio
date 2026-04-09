@@ -58,6 +58,8 @@ const HtxTextAreaResultLine = forwardRef(
       onChange: changeHandler,
       readOnly: readOnly || collapsed,
       onFocus,
+      dir: "auto",
+      style: { textAlign: "start", unicodeBidi: "plaintext" },
     };
 
     inputProps.onBlur = blurHandler;
@@ -201,6 +203,8 @@ const HtxTextAreaRegionView = observer(({ item, area, collapsed, setCollapsed, o
     label: item.label,
     placeholder: item.placeholder,
     autoSize: isTextArea ? { minRows: 1 } : null,
+    dir: "auto",
+    style: { textAlign: "start", unicodeBidi: "plaintext" },
     onChange: (ev) => {
       if (collapsed) return;
 

@@ -18,4 +18,6 @@ export type APIUser = {
   allow_newsletters: boolean;
   date_joined: string;
   permissions?: Ability[];
+  is_approved: boolean;
+  is_staff: boolean;
 };

@@ -18,6 +18,7 @@ urlpatterns = [
     # Authentication
     path('user/login/', views.user_login, name='user-login'),
     path('user/signup/', views.user_signup, name='user-signup'),
+    path('user/pending-approval/', views.user_pending_approval, name='user-pending-approval'),
     path('user/account/', views.user_account, name='user-account'),
     path('user/account/<sub_path>', views.user_account, name='user-account-anything'),
     re_path(r'^logout/?$', views.logout, name='logout'),
@@ -28,6 +29,9 @@ urlpatterns = [
     # Product tours
     path('api/current-user/product-tour', product_tours_api.ProductTourAPI.as_view(), name='product-tour'),
     path('api/current-user/hotkeys/', api.UserHotkeysAPI.as_view(), name='current-user-hotkeys'),
+    # Admin user approval
+    path('api/users/<int:pk>/approve/', api.UserApprovalAPI.as_view(), name='user-approve'),
+    path('api/users/<int:pk>/revoke/', api.UserRevokeApprovalAPI.as_view(), name='user-revoke'),
 ]
 
 # When CLOUD_FILE_STORAGE_ENABLED is set, avatars are uploaded to cloud storage with a different URL pattern.

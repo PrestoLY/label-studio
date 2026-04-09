@@ -3,7 +3,7 @@
 from django.urls import include, path
 from rest_framework import routers
 
-from . import api
+from . import api, review_api
 
 app_name = 'tasks'
 
@@ -28,6 +28,9 @@ _api_urlpatterns = [
 _api_annotations_urlpatterns = [
     path('<int:pk>/', api.AnnotationAPI.as_view(), name='annotation-detail'),
     path('<int:pk>/convert-to-draft', api.AnnotationConvertAPI.as_view(), name='annotation-convert-to-draft'),
+    # Review workflow (admin only)
+    path('<int:pk>/accept/', review_api.AnnotationAcceptAPI.as_view(), name='annotation-accept'),
+    path('<int:pk>/reject/', review_api.AnnotationRejectAPI.as_view(), name='annotation-reject'),
 ]
 
 _api_drafts_urlpatterns = [
